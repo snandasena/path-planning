@@ -13,6 +13,8 @@ Project: Highway Driving(Path Planning)
 *The car transmits its location, along with its sensor fusion data, which estimates the location of all the vehicles on the same side of the road.*
 
 ### The code model for generating paths
+Path planning implementation is coded in the `path_planner.cpp` with the method name `planPath`.  Following is the implementation of `planPath` method.
+
 
 ```cpp
 std::pair<std::vector<double>, std::vector<double >> PathPlanner::planPath(
@@ -33,4 +35,35 @@ std::pair<std::vector<double>, std::vector<double >> PathPlanner::planPath(
     return xy_trajectories;
 }
 
+```
+
+Following steps were followed to implement a path planning solution.
+
+##### Step01
+Added simulator incommig `x,y` coordinates and updated previusly used some `x,y` points using a double ended queue(`deque`).
+
+```cpp
+void PathPlanner::updateTrajectoryHistory(const path_planning::SimulatorRequest &simReqData)
+{
+    auto executedCommands = m_lastX.size() - simReqData.previous_path_x.size();
+
+    for (auto itr = m_lastX.begin(); itr != m_lastX.begin() + executedCommands; ++itr)
+    {
+        m_historyMainX.push_front(*itr);
+    }
+    if (m_historyMainX.size() > TRAJECTORY_HISTORY_LENGTH)
+    {
+        m_historyMainX.resize(TRAJECTORY_HISTORY_LENGTH);
+    }
+
+    for (auto itr = m_lastY.begin(); itr != m_lastY.begin() + executedCommands; ++itr)
+    {
+        m_historyMainY.push_front(*itr);
+    }
+
+    if (m_historyMainY.size() > TRAJECTORY_HISTORY_LENGTH)
+    {
+        m_historyMainY.resize(TRAJECTORY_HISTORY_LENGTH);
+    }
+}
 ```

@@ -202,3 +202,54 @@ std::pair<std::vector<double>, std::vector<double >> PathPlanner::generateTrajec
 }
 ```
 
+To fit a spline for the path between previous endpoint and new enpoint following `x,y` coordinates were used.
+* All the points in our car history (up to 100!), that are far enough apart from each other.
+
+```cpp
+ for (; x_histItr != m_historyMainX.end() && y_histItr != m_historyMainY.end(); ++x_histItr, ++y_histItr)
+    {
+        double histX = *x_histItr;
+        double histY = *y_histItr;
+        const double distToRef = distance(histX, histY, x_reference, y_reference);
+
+        if (distToRef > 1.5)
+        {
+            x_points.insert(x_points.begin(), histX);
+            y_points.insert(y_points.begin(), histY);
+
+            x_reference = histX;
+            y_reference = histY;
+        }
+    }
+```
+
+* The starting `x` and `y` points
+
+```cpp
+x_points.emplace_back(mainCar.x);
+y_points.emplace_back(mainCar.y);
+```
+* A few points from the previously planned path.
+```cpp
+if (previous_path_x.size() >= 5)
+{
+    x_points.emplace_back(previous_path_x[4]);
+    y_points.emplace_back(previous_path_y[4]);
+}
+
+if (previous_path_x.size() >= 10)
+{
+    x_points.emplace_back(previous_path_x[9]);
+    y_points.emplace_back(previous_path_y[9]);
+}
+```
+
+* Two distant points at the end of the path.
+
+```cpp
+x_points.emplace_back(beforeEndX);
+x_points.emplace_back(endX);
+
+y_points.emplace_back(beforeEndY);
+y_points.emplace_back(endY);
+```

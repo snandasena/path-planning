@@ -67,3 +67,138 @@ void PathPlanner::updateTrajectoryHistory(const path_planning::SimulatorRequest 
     }
 }
 ```
+
+##### Step02
+Check if a lane change is needed and change the target lane accodingly.
+
+```cpp
+void PathPlanner::scheduleLaneChange(const path_planning::MainCar &mainCar, const std::array<double, 3> &laneSpeeds,
+                                     const std::vector<path_planning::OtherCar> &sensorFusions)
+{
+    if (std::abs(mainCar.d - m_targetLaneD) > D_LIMIT_FOR_LANE_CHANGE_PENALTY)
+    {
+        m_laneChangeDelay = LANE_CHANGE_PENALTY;
+    }
+    else if (m_laneChangeDelay != 0)
+    {
+        --m_laneChangeDelay;
+    }
+    else
+    {
+        if (m_targetLaneD == D_LEFT_LANE && laneSpeeds[1] - LANE_CHANGE_COST > laneSpeeds[0]
+            && !isLaneBlocked(D_MIDDLE_LANE, mainCar, sensorFusions))
+        {
+            m_targetLaneD = D_MIDDLE_LANE;
+            m_targetLaneIndex = 1;
+            m_laneChangeDelay = LANE_CHANGE_PENALTY;
+        }
+        else if (m_targetLaneD == D_RIGHT_LANE && laneSpeeds[1] - LANE_CHANGE_COST > laneSpeeds[2]
+                 && !isLaneBlocked(D_MIDDLE_LANE, mainCar, sensorFusions))
+        {
+            m_targetLaneD = D_MIDDLE_LANE;
+            m_targetLaneIndex = 1;
+            m_laneChangeDelay = LANE_CHANGE_PENALTY;
+        }
+        else if (m_targetLaneD == D_MIDDLE_LANE &&
+                 (laneSpeeds[0] - LANE_CHANGE_COST > laneSpeeds[1] || laneSpeeds[2] - LANE_CHANGE_COST > laneSpeeds[1]))
+        {
+            if (laneSpeeds[0] > laneSpeeds[2] && !isLaneBlocked(D_LEFT_LANE, mainCar, sensorFusions))
+            {
+                m_targetLaneD = D_LEFT_LANE;
+                m_targetLaneIndex = 0;
+                m_laneChangeDelay = LANE_CHANGE_PENALTY;
+            }
+            else if (!isLaneBlocked(D_RIGHT_LANE, mainCar, sensorFusions))
+            {
+                m_targetLaneD = D_RIGHT_LANE;
+                m_targetLaneIndex = 2;
+                m_laneChangeDelay = LANE_CHANGE_PENALTY;
+            }
+        }
+    }
+}
+```
+
+##### Step03
+Plan a path to a distant point ahead of the car and return the path to the simulator.
+
+```cpp
+std::pair<std::vector<double>, std::vector<double >> PathPlanner::generateTrajectorySplines(
+        const path_planning::MainCar &mainCar, const double &max_lane_speed, const std::vector<double> &previous_path_x,
+        const std::vector<double> &previous_path_y)
+{
+    const double d_difference = m_targetLaneD - mainCar.d;
+    double beforeEndS = mainCar.s + max_lane_speed * PATH_DURATION_SECONDS * 0.5;
+    double beforeEndD = mainCar.d + d_difference * 0.5;
+
+    double endS = mainCar.s + max_lane_speed * PATH_DURATION_SECONDS;
+    double endD = m_targetLaneD;
+
+    double beforeEndX, beforeEndY, endX, endY;
+    std::tie(beforeEndX, beforeEndY) = getXY(beforeEndS, beforeEndD, m_wayPoints);
+    std::tie(endX, endY) = getXY(endS, endD, m_wayPoints);
+
+    std::vector<double> x_points, y_points;
+
+    double x_reference = mainCar.x;
+    double y_reference = mainCar.y;
+
+    auto x_histItr = m_historyMainX.begin();
+    auto y_histItr = m_historyMainY.begin();
+
+    for (; x_histItr != m_historyMainX.end() && y_histItr != m_historyMainY.end(); ++x_histItr, ++y_histItr)
+    {
+        double histX = *x_histItr;
+        double histY = *y_histItr;
+        const double distToRef = distance(histX, histY, x_reference, y_reference);
+
+        if (distToRef > 1.5)
+        {
+            x_points.insert(x_points.begin(), histX);
+            y_points.insert(y_points.begin(), histY);
+
+            x_reference = histX;
+            y_reference = histY;
+        }
+    }
+
+    // Push starting position
+    x_points.emplace_back(mainCar.x);
+    y_points.emplace_back(mainCar.y);
+
+    if (previous_path_x.size() >= 5)
+    {
+        x_points.emplace_back(previous_path_x[4]);
+        y_points.emplace_back(previous_path_y[4]);
+    }
+
+    if (previous_path_x.size() >= 10)
+    {
+        x_points.emplace_back(previous_path_x[9]);
+        y_points.emplace_back(previous_path_y[9]);
+    }
+
+    //  Push endpoints
+    x_points.emplace_back(beforeEndX);
+    x_points.emplace_back(endX);
+
+    y_points.emplace_back(beforeEndY);
+    y_points.emplace_back(endY);
+
+    std::vector<double> x_carPoints, y_carPoints;
+    std::tie(x_carPoints, y_carPoints) = worldCoordinatesToVehicleCoordinates(mainCar, x_points, y_points);
+
+    tk::spline spl;
+    spl.set_points(x_carPoints, y_carPoints);
+
+    auto numExecutedCommands = static_cast<int>(m_lastX.size() - previous_path_x.size());
+
+    std::pair<std::vector<double>, std::vector<double>> xyPath = splineToPath(spl,
+                                                                              mainCar,
+                                                                              max_lane_speed,
+                                                                              numExecutedCommands);
+
+    return xyPath;
+}
+```
+

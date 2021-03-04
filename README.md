@@ -8,7 +8,7 @@ Project: Highway Driving(Path Planning)
 |[Running instructions](https://youtu.be/SLMwKynQ9MU) | Final output|
 
 ### Introduction
-*The goal of this project is to build a path planner that creates smooth, safe trajectories for the car to follow. The highway track has other vehicles, all going different speeds, but approximately obeying the 50 MPH speed limit.*
+*The goal of this project is to build a path planner that creates smooth, safe trajectories for the car to follow. The highway track has other vehicles, all going at different speeds, but approximately obeying the 50 MPH speed limit.*
 
 *The car transmits its location, along with its sensor fusion data, which estimates the location of all the vehicles on the same side of the road.*
 
@@ -37,10 +37,10 @@ std::pair<std::vector<double>, std::vector<double >> PathPlanner::planPath(
 
 ```
 
-Following steps were followed to implement a path planning solution.
+The following steps were followed to implement a path planning solution.
 
 ##### Step01
-Added simulator incommig `x,y` coordinates and updated previusly used some `x,y` points using a double ended queue(`deque`).
+Added simulator incoming `x,y` coordinates and updated previously used some `x,y` points using a double-ended queue(`deque`).
 
 ```cpp
 void PathPlanner::updateTrajectoryHistory(const path_planning::SimulatorRequest &simReqData)
@@ -69,7 +69,7 @@ void PathPlanner::updateTrajectoryHistory(const path_planning::SimulatorRequest 
 ```
 
 ##### Step02
-Check if a lane change is needed and change the target lane accodingly.
+Check if a lane change is needed and change the target lane accordingly.
 
 ```cpp
 void PathPlanner::scheduleLaneChange(const path_planning::MainCar &mainCar, const std::array<double, 3> &laneSpeeds,
@@ -202,7 +202,7 @@ std::pair<std::vector<double>, std::vector<double >> PathPlanner::generateTrajec
 }
 ```
 
-To fit a spline for the path between previous endpoint and new enpoint following `x,y` coordinates were used.
+To fit a spline for the path between the previous endpoint and the new endpoint, following `x,y` coordinates were used.
 * All the points in our car history (up to 100!), that are far enough apart from each other.
 
 ```cpp
@@ -254,7 +254,7 @@ y_points.emplace_back(beforeEndY);
 y_points.emplace_back(endY);
 ```
 
-Above function was used to generate the path of more or less the distance to the target point. The maximum speed of the car was configured as 45.00 MPH. And also restricted to the speed of the car in front. Iterated over every time point on the path and referring to the previous speed and computed the next one by adding or subtracting the constant speedup value. Cached the speed generated after every timepoint, as that's where we get our current speed. After all this, the car points are converted to world coordinates and returned.
+The above function was used to generate the path of more or less the distance to the target point. The maximum speed of the car was configured as 45.00 MPH. And also restricted to the speed of the car in front. Iterated over every time point on the path and referring to the previous speed and computed the next one by adding or subtracting the constant speedup value. Cached the speed generated after every timepoint, as that's where we get our current speed. After all this, the car points are converted to world coordinates and returned.
 
 ### References
 * https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd013

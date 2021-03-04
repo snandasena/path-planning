@@ -152,7 +152,7 @@ std::pair<std::vector<double>, std::vector<double >> PathPlanner::generateTrajec
         double histY = *y_histItr;
         const double distToRef = distance(histX, histY, x_reference, y_reference);
 
-        if (distToRef > 1.5)
+        if (distToRef > 2.5)
         {
             x_points.insert(x_points.begin(), histX);
             y_points.insert(y_points.begin(), histY);
@@ -253,3 +253,16 @@ x_points.emplace_back(endX);
 y_points.emplace_back(beforeEndY);
 y_points.emplace_back(endY);
 ```
+
+Above function was used to generate the path of more or less the distance to the target point. The maximum speed of the car was configured as 45.00 mph. And also restricted to the speed of the car in front. Iterated over every time point on the path and referring to the previous speed and computed the next one by adding or subtracting the constant speedup value. Cached the speed generated after every timepoint, as that's where we get our current speed. After all this, the car points are converted to world coordinates and returned.
+
+### References
+* https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd013
+* http://ais.informatik.uni-freiburg.de/teaching/ss18/robotics/index_en.php
+* https://github.com/snandasena/kalman-filter-cpp
+* https://github.com/LinasKo/CarND-Path-Planning-Project
+
+
+### Acknowledgments
+Big thank you to [Udacity](https://www.udacity.com) for providing the template code and simulator for this project.
+
